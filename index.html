@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A visual self-portrait told through a microscope: Santiago, Toronto and Madrid, seen as neurochemistry.">
+<title>Visual Self Portrait</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b0b0d">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Visual Self Portrait">
+<meta property="og:description" content="Santiago, Toronto and Madrid, seen through a microscope: three slides, three magnifications, and the neurochemistry underneath.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+<link rel="stylesheet" href="css/style.css?v=2026-11-25d">
+</head>
+<body>
+
+<div id="scene3d"></div>
+<div class="world" id="world"></div>
+
+<div class="eyeview" id="eyeview">
+  <div class="scope" id="scope">
+    <div class="glass"><div class="content" id="content"></div><canvas id="zoomfx"></canvas></div>
+    <div class="eyepiece-rim"></div>
+  </div>
+  <div class="magwheel" id="magwheel" title="Turn to change magnification">
+    <div class="wheel" id="wheel"></div>
+    <div class="index"></div>
+  </div>
+  <button class="closeview" id="closeview" aria-label="Step back from the microscope">&times;</button>
+  <div class="howto chemnote" id="chemnote" aria-live="polite"></div>
+</div>
+
+<div class="entry" id="entry" aria-label="Enter">
+  <div class="wall w-top"></div><div class="wall w-left"></div><div class="wall w-right"></div>
+  <div class="floor"></div><div class="skirting"></div>
+  <div class="guard"></div><div class="alarm"></div>
+  <div class="rail l"></div><div class="rail r"></div>
+  <div class="frame"></div>
+  <div class="doorway"><div class="door" id="door"><div class="stripe"></div><div class="win"></div><div class="plate"></div><div class="kick"></div></div></div>
+  <div class="closer"></div>
+  <div class="sign">ENTER</div>
+</div>
+
+<div class="howto" id="howto" role="dialog" aria-label="How to use the lab">
+  <h2>Before you begin</h2>
+  <ol>
+    <li>Use the microscope to inspect each slide, in order: <b>SCL</b>, <b>YYZ</b>, <b>MAD</b>. Click a slide to place it on the microscope.</li>
+    <li>Once the slide is placed, click the viewfinder (the eyepieces at the top of the microscope) to look through it.</li>
+    <li>Click the image to increase the magnification.</li>
+    <li>Click the notebook to the right of the microscope to learn more about what you are seeing.</li>
+  </ol>
+  <button id="howtoOk">Begin</button>
+</div>
+
+<div class="howto afternote" id="afternote" role="dialog" aria-label="What just happened">
+  <div class="what">What just happened</div>
+  <h2>A panic attack</h2>
+  <p>At 2:13 AM, months of built-up stress tipped over. The brain's alarm centre (the locus coeruleus) flooded the body with
+     <b>noradrenaline</b>, and the adrenal glands turned it into <b>adrenaline</b>: the enzyme PNMT adds one methyl group.</p>
+  <p>Together they set off fight-or-flight with no real danger present: a racing, pounding heart, fast shallow breathing,
+     trembling, sweating, tunnel vision and the feeling of losing control. It peaks within minutes, then slowly fades,
+     leaving exhaustion behind.</p>
+  <p class="next">Next: place the <b>MAD</b> slide on the microscope.</p>
+  <button id="afternoteOk">Continue</button>
+</div>
+
+<div class="interlude" id="interlude"><div class="clock" id="clock"></div><div class="howto chemnote" id="crisisnote" aria-live="polite"></div></div>
+
+<div class="notebook" id="notebook">
+  <div class="nb-wrap">
+  <div class="nb-under"></div>
+  <div class="nb">
+    <div class="nb-page right"><img src="images/notebook/notes-v2.jpg" alt="Experimental notes: Neurochemical transitions"></div>
+    <div class="nb-spiral"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+  </div>
+</div>
+
+<div id="blackout"></div>
+
+<script src="js/main.js?v=2026-11-25d"></script>
+<script type="module" src="js/microscope.js?v=2026-11-25d"></script>
+</body>
+</html>

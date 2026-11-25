@@ -1,0 +1,284 @@
+/* Visual Self Portrait — styles */
+
+:root {
+  --view: min(76vh, 84vw);
+  --serif: "Instrument Serif", "Didot", "Bodoni 72", Georgia, serif;
+  --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --red: #e0301e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background: #d6dbdf;
+  color: #16202a;
+  font-family: var(--sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ---------- the 3D lab ---------- */
+#scene3d { position: fixed; inset: 0; }
+#scene3d canvas { display: block; width: 100%; height: 100%; }
+.world { display: none; }
+
+/* ---------- what you see through the eyepiece ---------- */
+.eyeview {
+  position: fixed; inset: 0;
+  z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  padding-bottom: 7vh;
+  background: radial-gradient(circle, rgba(0,0,0,.88) 30%, #000 75%);
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s ease;
+  cursor: zoom-out;
+}
+.eyeview.open { opacity: 1; pointer-events: auto; }
+/* the magnification wheel: the edge of a big dial peeking in from the right */
+.magwheel {
+  --wr: 30vh;                                   /* wheel radius */
+  position: absolute; right: 0; top: 50%;
+  width: 17vh; height: 70vh;
+  transform: translateY(-50%);
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.wheel {
+  position: absolute;
+  left: 3vh; top: 50%;
+  width: calc(var(--wr) * 2); height: calc(var(--wr) * 2);
+  margin-top: calc(var(--wr) * -1);
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.16);
+  transition: transform .8s cubic-bezier(.5,-0.2,.3,1.2);
+}
+.wheel::before {                                 /* fine ticks around the rim */
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255,255,255,.2) 0 .35deg, transparent .35deg 5deg);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 93%, #000 94%);
+          mask: radial-gradient(circle closest-side, transparent 93%, #000 94%);
+}
+.wheel span {
+  position: absolute; left: 50%; top: 50%;
+  font-family: var(--serif); font-style: italic;
+  font-size: 2.6vh; color: rgba(242,239,233,.28);
+  white-space: nowrap; cursor: pointer;
+  transition: color .5s, font-size .5s, opacity .4s, transform .8s cubic-bezier(.5,-0.2,.3,1.2);
+}
+.wheel span.on { font-size: 4.4vh; color: rgba(242,239,233,.85); }
+.magwheel .index {                               /* the little red mark the value lines up with */
+  position: absolute; left: .8vh; top: 50%;
+  width: 1.4vh; height: 1px; background: var(--red);
+}
+.closeview {
+  position: absolute; top: 4vh; right: 4vw;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.35); background: none;
+  color: #f2efe9; font-size: 22px; line-height: 1; cursor: pointer;
+}
+.closeview:hover { border-color: #fff; }
+.scope { position: relative; width: var(--view); aspect-ratio: 1; cursor: pointer; transform: scale(.92); transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+.eyeview.open .scope { transform: none; }
+.eyepiece-rim {
+  position: absolute; inset: -5%;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, #2b2b2b, #5e5e5e, #1c1c1c, #474747, #161616, #3c3c3c, #2b2b2b);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 90.4%, #000 90.8%);
+          mask: radial-gradient(circle closest-side, transparent 90.4%, #000 90.8%);
+  pointer-events: none;
+}
+.glass {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #050505;
+}
+.glass::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(ellipse 45% 25% at 32% 18%, rgba(255,255,255,.08), transparent 70%),
+    radial-gradient(circle, transparent 60%, rgba(0,0,0,.4) 82%, rgba(0,0,0,.95) 100%);
+  pointer-events: none;
+}
+.content {
+  position: absolute; inset: 0;
+  transition: filter 1.3s cubic-bezier(.2,.7,.2,1), transform 1.6s cubic-bezier(.2,.7,.2,1);
+}
+.content.blur { filter: blur(26px) brightness(.55); transform: scale(1.15); transition: none; }
+.content canvas, .content svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.content img.photo {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  transform-origin: var(--focus, 50% 50%);
+  animation: settle 6s ease-out both;
+}
+@keyframes settle { from { transform: scale(calc(var(--z, 1) * 1.06)); } to { transform: scale(var(--z, 1)); } }
+.tone-warm { filter: saturate(1.1) sepia(.12) brightness(1.04); }
+.tone-cold { filter: saturate(.38) brightness(.8) contrast(.92) blur(1.1px); }   /* Toronto: muted, dim, a little soft — faces still readable */
+.sun { position: absolute; inset: 0; animation: sunDrift 14s ease-in-out infinite alternate; }
+@keyframes sunDrift { to { filter: hue-rotate(-8deg) brightness(1.08); transform: scale(1.08); } }
+/* lamp on, nothing on the stage: just light */
+.empty-field { position: absolute; inset: 0; background: radial-gradient(circle, #fffdf6 0%, #f4efe2 55%, #cfc8b6 100%); }
+
+
+/* globe */
+.route { fill: none; stroke: var(--red); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 6px rgba(224,48,30,.8)); }
+.route.draw { stroke-dashoffset: 0; transition: stroke-dashoffset 2s cubic-bezier(.6,0,.2,1); }
+.city-dot { fill: var(--red); }
+.city-ring { fill: none; stroke: var(--red); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: ping 2.4s ease-out infinite; }
+@keyframes ping { from { transform: scale(1); opacity: .9; } to { transform: scale(4); opacity: 0; } }
+
+/* zoom between magnifications: grey streaks rushing past inside the eyepiece */
+#zoomfx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; }
+.content.zooming { transition: transform .32s cubic-bezier(.55,0,.9,.4), filter .32s ease-in; }
+
+/* ---------- the way in: a single hospital-lab door ---------- */
+.entry { position: fixed; inset: 0; z-index: 20; cursor: pointer; overflow: hidden;
+         --dw: min(30vh, 40vw); --dh: min(64vh, 86vw); --floor: 88vh;
+         --dl: calc(50vw - var(--dw) / 2); --dt: calc(var(--floor) - var(--dh));
+         perspective: 1400px; perspective-origin: 50% 55%; transform-origin: 50% 58%; }
+.entry .wall, .entry .floor { position: absolute; background-attachment: fixed; }
+.entry .wall { background: linear-gradient(180deg, #f4f5f3 0%, #eceeeb 55%, #e3e5e1 100%); background-attachment: fixed; }
+.entry .w-left  { left: 0; top: 0; width: calc(var(--dl) - 2.2vh); height: var(--floor); }
+.entry .w-right { right: 0; top: 0; width: calc(100vw - var(--dl) - var(--dw) - 2.2vh); height: var(--floor); }
+.entry .w-top   { left: 0; right: 0; top: 0; height: calc(var(--dt) - 2.2vh); }
+.entry .floor { left: 0; right: 0; top: var(--floor); bottom: 0;
+                background: linear-gradient(180deg, #d9d6cc 0%, #ebe8df 18%, #f2efe7 100%); }
+.entry .floor::before { content: ""; position: absolute; left: calc(var(--dl) - 1vh); width: calc(var(--dw) + 2vh); top: 0; height: 40%;
+                        background: linear-gradient(180deg, rgba(190,185,170,.55), transparent); filter: blur(6px); }   /* the door's reflection */
+.entry .skirting { position: absolute; left: 0; right: 0; top: calc(var(--floor) - 1.6vh); height: 1.6vh; background: #e7e1cf; border-top: 1px solid #d8d1bb; }
+.entry .frame { position: absolute; left: calc(var(--dl) - 2.2vh); top: calc(var(--dt) - 2.2vh); width: calc(var(--dw) + 4.4vh); height: calc(var(--dh) + 2.2vh);
+                border: 2.2vh solid #e4dec4; border-bottom: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 0 3vh rgba(0,0,0,.08); pointer-events: none; }
+.entry .doorway { position: absolute; left: var(--dl); top: var(--dt); width: var(--dw); height: var(--dh); transform-style: preserve-3d; }
+.entry .door { position: absolute; inset: 0; transform-origin: 0 50%; transition: transform 1.25s cubic-bezier(.45,.05,.25,1);
+               background: linear-gradient(90deg, #ebe5cc, #f1ecd6 40%, #e7e0c4); box-shadow: inset -1px 0 0 rgba(0,0,0,.12), inset 0 0 0 1px rgba(0,0,0,.05); }
+.entry.open .door { transform: rotateY(84deg); }
+.entry .door .kick { position: absolute; left: 0; right: 0; bottom: 0; height: 24%;
+                     background: linear-gradient(100deg, #9a9d9f, #d6d8d9 30%, #a5a8aa 55%, #cfd1d2 80%, #9c9fa1); border-top: 1px solid #8d9092; }
+.entry .door .win { position: absolute; left: 58%; top: 18%; width: 15%; height: 33%; border: .55vh solid #1b1b1b;
+                    background: linear-gradient(160deg, #cfd8dc 0%, #e9eef0 30%, #b9c3c7 55%, #dfe5e7 100%); box-shadow: inset 0 0 1.2vh rgba(0,0,0,.25); }
+.entry .door .plate { position: absolute; left: 78%; top: 42%; width: 11%; height: 17%; border-radius: .3vh;
+                      background: linear-gradient(90deg, #a7aaac, #dfe1e2 45%, #b2b5b7); box-shadow: 0 .2vh .4vh rgba(0,0,0,.18); }
+.entry .door .stripe { position: absolute; left: 0; right: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(0,0,0,.05), transparent 6%, transparent 94%, rgba(0,0,0,.07)); }
+.entry .closer { position: absolute; left: calc(var(--dl) + var(--dw) * .08); top: calc(var(--dt) - 1.6vh); width: calc(var(--dw) * .55); height: 1.6vh;
+                 background: linear-gradient(180deg, #c9cbcc, #9fa2a4); border-radius: .3vh; box-shadow: 0 .3vh .6vh rgba(0,0,0,.15); }
+.entry .closer::after { content: ""; position: absolute; right: -14%; top: -40%; width: 26%; height: 180%; background: linear-gradient(180deg, #dcdedf, #aeb1b3); border-radius: .3vh; }
+.entry .sign { position: absolute; left: 50%; top: calc(var(--dt) - 12.5vh); transform: translateX(-50%);
+               padding: 1.1vh 2.6vh; background: linear-gradient(180deg, #19b97a, #0e9a63); border: .5vh solid #e9ecea; border-radius: .4vh;
+               font-family: var(--sans); font-weight: 500; font-size: 3.8vh; letter-spacing: .08em; color: #f4fff8;
+               text-shadow: 0 0 1.2vh rgba(220,255,235,.9); box-shadow: 0 0 4vh rgba(30,220,140,.45), 0 .6vh 1.4vh rgba(0,0,0,.12); }
+.entry .sign::before { content: ""; position: absolute; left: 10%; right: 10%; bottom: 100%; height: 3.2vh; margin-bottom: .5vh;
+                       background: linear-gradient(180deg, #f2f3f2, #d9dcdb); border-radius: .3vh .3vh 0 0; box-shadow: 0 -.2vh .6vh rgba(0,0,0,.08); }
+.entry .rail { position: absolute; top: calc(var(--floor) - 32vh); height: 1.4vh; border-radius: .7vh; background: linear-gradient(180deg, #f6f3ea, #d8d2c2); box-shadow: 0 .5vh .8vh rgba(0,0,0,.12); }
+.entry .rail.l { left: 0; width: calc(var(--dl) - 6vh); }
+.entry .rail.r { right: 0; width: calc(100vw - var(--dl) - var(--dw) - 6vh); }
+.entry .guard { position: absolute; left: calc(var(--dl) - 16vh); top: 0; width: 2.4vh; height: var(--floor);
+                background: linear-gradient(90deg, #8f9395, #e4e6e7 40%, #a1a4a6 70%, #c9cbcc); }
+.entry .alarm { position: absolute; left: calc(var(--dl) - 11vh); top: calc(var(--floor) - 40vh); width: 2.2vh; height: 2.6vh; background: #c8231b; border-radius: .2vh; box-shadow: inset 0 0 0 .4vh #e14a3f; }
+.entry::after { content: ""; position: absolute; inset: 0; pointer-events: none;     /* ceiling light, soft corners */
+                background: radial-gradient(ellipse 70% 60% at 50% 18%, rgba(255,255,255,.35), transparent 60%),
+                            radial-gradient(ellipse 120% 100% at 50% 45%, transparent 55%, rgba(60,62,60,.28) 100%); }
+.entry .doorway::after { content: ""; position: absolute; left: -2.2vh; right: -2.2vh; bottom: -1.2vh; height: 1.2vh;
+                         background: radial-gradient(ellipse at 50% 0, rgba(0,0,0,.22), transparent 70%); }
+.entry.through { transform: scale(3.6); opacity: 0; transition: transform 1.7s cubic-bezier(.5,0,.75,.2), opacity .7s ease 1.1s; pointer-events: none; }
+.entry.gone { display: none; }
+
+/* ---------- the catalyst: full screen ---------- */
+.interlude { position: fixed; inset: 0; z-index: 25; background: #000; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+.interlude.on { opacity: 1; pointer-events: auto; }
+.interlude { display: flex; align-items: center; justify-content: center; }
+.clock { position: relative; z-index: 1; font-family: var(--sans); font-weight: 300; font-size: clamp(40px, 7vw, 110px); letter-spacing: .1em;
+         font-variant-numeric: tabular-nums; color: rgba(242,239,233,.88); opacity: 0; transition: opacity .8s ease; }
+.clock small { font-size: .32em; letter-spacing: .2em; margin-left: .5em; opacity: .7; }
+.clock.on { opacity: 1; }
+.clock .colon { animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- the lab notebook, opened on the screen ---------- */
+.notebook { position: fixed; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center;
+            background: rgba(18,16,14,.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            opacity: 0; pointer-events: none; transition: opacity .45s ease; cursor: zoom-out; perspective: 1800px; }
+.notebook.open { opacity: 1; pointer-events: auto; }
+.nb { --pw: min(82vw, 72vh); --ph: calc(var(--pw) * 1815 / 1710);
+      position: relative; display: flex; padding: 1.1vh 1.3vh 1.5vh;
+      background: linear-gradient(160deg, #4a2e1f, #2f1c12 60%, #3b2418);                 /* hard cover */
+      border-radius: 1.2vh; box-shadow: 0 3vh 7vh rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06);
+      }
+.nb-wrap { position: relative; transform: translateY(10vh) rotateX(18deg) scale(.9); transform-origin: 50% 100%;
+           transition: transform .75s cubic-bezier(.2,.75,.2,1); }
+.notebook.open .nb-wrap { transform: rotateX(7deg); }
+.nb-under { position: absolute; inset: 0; border-radius: 1.2vh; transform: translate(1.5vh, 1.7vh) rotate(.6deg);   /* the half folded underneath */
+            background: #f2eddd; box-shadow: inset 0 0 0 .9vh #2f1c12, 0 0 0 1px rgba(0,0,0,.2), 0 2vh 5vh rgba(0,0,0,.45);
+            background-image: repeating-linear-gradient(180deg, #f2eddd 0 3px, #e4ddc8 3px 4px); }
+.nb { padding-right: 2.6vh; }
+.nb-page { position: relative; width: var(--pw); height: var(--ph); background: #f7f3e6; overflow: hidden;
+           /* the pages underneath, peeking out at the edge */
+           box-shadow: 0 1px 0 #e9e3cf, 0 2px 0 #f6f2e4, 0 3px 0 #e5dfca, 0 4px 0 #f2eddd, 0 6px 6px rgba(0,0,0,.25); }
+/* the page is your scan's own paper: a blank strip from its margin, stretched, so lines and tone match exactly */
+.nb-page.right { background: url("../images/notebook/paper-strip.jpg") 0 0 / 100% 100% no-repeat; border-radius: .5vh 0 0 .5vh; }
+.nb-page.right img { position: absolute; top: 0; bottom: 0; left: 0; width: calc(100% - 2.8vh); height: 100%; object-fit: fill; }
+/* soften the scan's own left edge into the paper behind it */
+.nb-page.right img { -webkit-mask: linear-gradient(270deg, transparent, #000 3%); mask: linear-gradient(270deg, transparent, #000 3%); }
+.nb-page::after { content: ""; position: absolute; inset: 0; pointer-events: none; }        /* the paper curving into the spine */
+.nb-page.right::after { background: linear-gradient(270deg, rgba(60,40,20,.22), rgba(60,40,20,.05) 6%, transparent 12%), linear-gradient(90deg, rgba(0,0,0,.05), transparent 5%); }
+.nb-spiral { position: absolute; right: -.4vh; top: 2.4vh; bottom: 2.6vh; width: 3.4vh;
+             display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.nb-spiral i { display: block; height: 1.25vh; border-radius: 1vh;
+               background: linear-gradient(180deg, #f3f4f5, #9ea3a7 45%, #e2e4e6 60%, #7d8286);
+               box-shadow: 0 .25vh .35vh rgba(0,0,0,.35); }
+.nb-spiral i::before, .nb-spiral i::after { content: ""; position: absolute; width: .55vh; height: .55vh; margin-top: .35vh; border-radius: 50%; background: #2b2118; }
+.nb-spiral i::before { left: -.9vh; } .nb-spiral i::after { display: none; }             /* punched holes */
+.nb-spiral i { position: relative; }
+@media (max-width: 900px) { .nb { --pw: min(84vw, 72vh); } }
+
+/* ---------- instructions, once you're inside ---------- */
+.howto { position: fixed; left: 50%; bottom: 6vh; z-index: 9; width: min(440px, calc(100vw - 32px));
+         padding: 22px 24px 18px; border-radius: 6px; background: #f6f1e4; color: #3a2418;
+         box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(58,36,24,.12);
+         font-family: var(--sans); font-size: 14.5px; line-height: 1.55;
+         opacity: 0; transform: translate(-50%, 16px); pointer-events: none; transition: opacity .5s ease, transform .6s cubic-bezier(.2,.7,.2,1); }
+.howto.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.howto h2 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 24px; margin-bottom: 8px; }
+.howto ol { padding-left: 20px; }
+.howto li { margin: 4px 0; }
+.howto b { font-family: "Space Mono", monospace; font-size: 13px; letter-spacing: .04em; }
+.howto button { margin-top: 14px; float: right; font: 500 13px var(--sans); letter-spacing: .04em; color: #f6f1e4; background: #3a2418;
+                border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+.howto button:hover { background: #5a3826; }
+
+/* ---------- chemical labels at ×40: the same paper note as the instructions ---------- */
+.howto.chemnote { left: 4vw; bottom: 7vh; width: min(330px, calc((100vw - var(--view)) / 2 - 6vw)); min-width: 230px;
+                  transform: translate(0, 16px); padding: 18px 20px 16px; font-size: 13.5px; pointer-events: none; }
+.howto.chemnote.on { transform: translate(0, 0); pointer-events: auto; }
+.chemnote h2 { font-size: 24px; margin-bottom: 2px; }
+.chemnote .formula { font-family: "Space Mono", "Courier New", monospace; font-size: 14px; letter-spacing: .02em; margin-bottom: 8px; color: #5a3826; }
+.chemnote .formula sub { font-size: .72em; }
+.chemnote .what { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; opacity: .55; margin-bottom: 2px; }
+.chemnote .chem + .chem { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(58,36,24,.15); }
+.chemnote .step { font-family: "Space Mono", monospace; font-size: 12px; margin-top: 10px; color: #5a3826; text-align: center; }
+#crisisnote { z-index: 2; }
+@media (max-width: 900px), (max-aspect-ratio: 5/4) {
+  .howto.chemnote { left: 50%; bottom: 2vh; width: min(360px, calc(100vw - 32px)); transform: translate(-50%, 16px); padding: 12px 16px; font-size: 12.5px; }
+  .howto.chemnote.on { transform: translate(-50%, 0); }
+  .chemnote h2 { font-size: 20px; }
+}
+
+/* ---------- after the breaking point: what a panic attack is ---------- */
+.howto.afternote { bottom: auto; top: 50%; width: min(480px, calc(100vw - 32px)); transform: translate(-50%, calc(-50% + 16px)); z-index: 12; }
+.howto.afternote.on { transform: translate(-50%, -50%); }
+.afternote .what { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; opacity: .55; margin-bottom: 2px; }
+.afternote p { margin-top: 8px; }
+.afternote b { font-family: var(--sans); font-size: inherit; letter-spacing: 0; font-weight: 600; }
+.afternote .next { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(58,36,24,.15); }
+.afternote .next b { font-family: "Space Mono", monospace; font-size: 13px; }
+
+/* ---------- black flicker ---------- */
+#blackout { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 30; }
+#blackout.flick { animation: flick 520ms steps(1) forwards; }
+@keyframes flick { 0% { opacity: 1; } 14% { opacity: 0; } 24% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- phones: the lab on top, the eyepiece view below ---------- */
+@media (max-width: 900px) {
+  :root { --view: min(92vw, 70vh); }
+}
